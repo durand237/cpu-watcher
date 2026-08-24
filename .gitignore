@@ -7,7 +7,7 @@ Thumbs.db
 *.swo
 
 # Keep shared VS Code configuration in Git; ignore only machine-local files.
-.vscode/*.local.json
+.vscode
 *.code-workspace
 .idea/
 *.iml
