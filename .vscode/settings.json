@@ -1,0 +1,41 @@
+{
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/.aws": true,
+    "**/.env*": true,
+    "**/.gradle": true,
+    "**/.terraform": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/dist": true,
+    "**/node_modules": true,
+    "**/target": true,
+    "**/*.tfstate": true,
+    "**/*.tfstate.*": true,
+    "**/*.tfvars": true,
+    "**/*.tfvars.json": true
+  },
+  "search.exclude": {
+    "**/.aws": true,
+    "**/secrets": true,
+    "**/.gradle": true,
+    "**/.terraform": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/dist": true,
+    "**/node_modules": true,
+    "**/target": true,
+    "**/*.tfstate*": true,
+    "**/*.tfvars*": true,
+    "**/.env*": true
+  },
+  "files.watcherExclude": {
+    "**/.gradle/**": true,
+    "**/.terraform/**": true,
+    "**/build/**": true,
+    "**/coverage/**": true,
+    "**/dist/**": true,
+    "**/node_modules/**": true,
+    "**/target/**": true
+  }
+}

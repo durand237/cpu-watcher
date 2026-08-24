@@ -1,0 +1,57 @@
+# Keep source control metadata, editor files, and local secrets out of Docker
+# build contexts. Dockerfiles and Compose files remain included.
+.git
+.gitignore
+.dockerignore
+.vscode
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+**/.aws/
+secrets/
+**/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Terraform state and working directories
+.terraform/
+**/.terraform/
+*.tfstate*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+!*.tfvars.json.example
+*.tfplan
+
+# Java/Gradle generated files
+target/
+**/target/
+.gradle/
+**/.gradle/
+build/
+**/build/
+out/
+**/out/
+*.class
+
+# Node/React dependencies and generated output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+coverage/
+**/coverage/
+.cache/
+
+# Logs and local Docker data
+*.log
+logs/
+**/logs/
+docker-data/
+**/docker-data/
