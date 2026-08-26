@@ -61,10 +61,14 @@ target/
 **/target/
 .gradle/
 **/.gradle/
+.gradle-home/
+**/.gradle-home/
 build/
 **/build/
 out/
 **/out/
+bin/
+**/bin/
 *.class
 *.jar
 *.war
@@ -89,6 +93,7 @@ coverage/
 # Logs and local runtime data
 # -----------------------------------------------------------------------------
 *.log
+.collector.pid
 logs/
 **/logs/
 tmp/
