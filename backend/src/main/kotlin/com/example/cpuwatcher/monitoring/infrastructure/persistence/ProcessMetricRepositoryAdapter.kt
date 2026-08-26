@@ -1,8 +1,10 @@
 package com.example.cpuwatcher.monitoring.infrastructure.persistence
 
 import com.example.cpuwatcher.monitoring.application.ProcessMetricRepository
+import com.example.cpuwatcher.monitoring.application.ProcessMetricSearchPage
 import com.example.cpuwatcher.monitoring.domain.ProcessMetric
 import com.example.cpuwatcher.monitoring.domain.ProcessMetricBatch
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Repository
 
 @Repository
@@ -30,6 +32,17 @@ class ProcessMetricRepositoryAdapter(
 			collectedAt = snapshot.collectedAt,
 			hostMetrics = snapshot.toHostMetrics(),
 			processes = metrics,
+		)
+	}
+
+	override fun searchProcessOccurrences(hostName: String, query: String, page: Int, size: Int): ProcessMetricSearchPage {
+		val occurrences = jpaRepository.searchByHostName(hostName, query, PageRequest.of(page, size))
+		return ProcessMetricSearchPage(
+			occurrences = occurrences.content.map(ProcessMetricEntity::toDomain),
+			page = occurrences.number,
+			size = occurrences.size,
+			totalElements = occurrences.totalElements,
+			totalPages = occurrences.totalPages,
 		)
 	}
 }

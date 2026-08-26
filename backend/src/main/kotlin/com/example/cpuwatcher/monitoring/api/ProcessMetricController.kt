@@ -4,6 +4,8 @@ import com.example.cpuwatcher.monitoring.api.dto.ProcessMetricBatchRequest
 import com.example.cpuwatcher.monitoring.api.dto.ProcessMetricBatchResponse
 import com.example.cpuwatcher.monitoring.api.dto.ProcessMetricSnapshotResponse
 import com.example.cpuwatcher.monitoring.api.dto.toSnapshotResponse
+import com.example.cpuwatcher.monitoring.api.dto.toOccurrenceResponse
+import com.example.cpuwatcher.monitoring.api.dto.toOccurrencePageResponse
 import com.example.cpuwatcher.monitoring.application.ProcessMetricService
 import com.example.cpuwatcher.monitoring.domain.ProcessMetric
 import com.example.cpuwatcher.monitoring.domain.ProcessMetricBatch
@@ -60,6 +62,19 @@ class ProcessMetricController(
 		service.findLatestSnapshot(hostName?.let(::requireHostName))?.toSnapshotResponse()
 			?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "No metrics found for host")
 
+	@GetMapping("/processes/search")
+	fun searchProcessOccurrences(
+		@RequestParam hostName: String,
+		@RequestParam(defaultValue = "") query: String,
+		@RequestParam(defaultValue = "0") page: Int,
+		@RequestParam(defaultValue = "15") size: Int,
+	) = service.searchProcessOccurrences(
+		hostName = requireHostName(hostName),
+		query = requireSearchQuery(query),
+		page = requirePage(page),
+		size = requirePageSize(size),
+	).toOccurrencePageResponse()
+
 	@GetMapping("/processes/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
 	fun stream(@RequestParam hostName: String): SseEmitter =
 		sseRegistry.subscribe(requireHostName(hostName))
@@ -69,5 +84,27 @@ class ProcessMetricController(
 			throw ResponseStatusException(HttpStatus.BAD_REQUEST, "hostName must not be blank")
 		}
 		return hostName
+	}
+
+	private fun requireSearchQuery(query: String): String {
+		val trimmed = query.trim()
+		if (trimmed.length > 128) {
+			throw ResponseStatusException(HttpStatus.BAD_REQUEST, "query must not exceed 128 characters")
+		}
+		return trimmed
+	}
+
+	private fun requirePage(page: Int): Int {
+		if (page < 0) {
+			throw ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be zero or greater")
+		}
+		return page
+	}
+
+	private fun requirePageSize(size: Int): Int {
+		if (size !in 1..100) {
+			throw ResponseStatusException(HttpStatus.BAD_REQUEST, "size must be between 1 and 100")
+		}
+		return size
 	}
 }

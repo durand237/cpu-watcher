@@ -21,4 +21,8 @@ class ProcessMetricServiceImpl(
 	@Transactional(readOnly = true)
 	override fun findLatestSnapshot(hostName: String?): ProcessMetricBatch? =
 		repository.findLatestSnapshot(hostName)
+
+	@Transactional(readOnly = true)
+	override fun searchProcessOccurrences(hostName: String, query: String, page: Int, size: Int) =
+		repository.searchProcessOccurrences(hostName, query, page, size)
 }

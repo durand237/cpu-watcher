@@ -22,6 +22,8 @@ $env:SPRING_DATASOURCE_PASSWORD = "your-password"
 
 `POST /api/v1/metrics/processes` accepts a batch from a collector and returns `202 Accepted` with the number of accepted records. The endpoint requires the `X-Collector-Api-Key` header and validates host name, process name, non-negative values, and percentage ranges.
 
+`GET /api/v1/metrics/processes/search?hostName=MyLaptop&query=java` returns up to 50 matching stored process occurrences, newest first. It searches case-insensitively by process name or PID and is backed by a PostgreSQL trigram index on process names.
+
 The health endpoint is available at `GET /actuator/health`.
 
 ## Verification

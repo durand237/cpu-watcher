@@ -9,6 +9,19 @@ type ProcessMetric = {
   memoryUsagePercent: number
 }
 
+type ProcessOccurrence = ProcessMetric & {
+  hostName: string
+  collectedAt: string
+}
+
+type ProcessOccurrencePage = {
+  occurrences: ProcessOccurrence[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
 type HostMetrics = {
   cpuUsagePercent: number
   memoryUsagePercent: number
@@ -26,6 +39,7 @@ type HistoryPoint = HostMetrics & { collectedAt: string }
 
 const apiBase = '/api/v1/metrics/processes'
 const maxHistoryPoints = 60
+const searchPageSize = 15
 
 function clamp(value: number) {
   return Math.min(100, Math.max(0, value))
@@ -103,6 +117,12 @@ function App() {
   const [history, setHistory] = useState<HistoryPoint[]>([])
   const [connection, setConnection] = useState<'connecting' | 'live' | 'error'>('connecting')
   const [error, setError] = useState<string | null>(null)
+  const [processQuery, setProcessQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<ProcessOccurrence[]>([])
+  const [searchPage, setSearchPage] = useState(0)
+  const [searchTotalElements, setSearchTotalElements] = useState(0)
+  const [searchTotalPages, setSearchTotalPages] = useState(0)
+  const [searchStatus, setSearchStatus] = useState<'idle' | 'loading' | 'error'>('idle')
 
   const applySnapshot = useCallback((nextSnapshot: Snapshot) => {
     const metrics = metricsFor(nextSnapshot)
@@ -155,8 +175,59 @@ function App() {
     return () => { active = false; if (retryTimer) clearTimeout(retryTimer); eventSource?.close() }
   }, [applySnapshot])
 
+  const searchQuery = processQuery.trim()
+  const hostName = snapshot?.hostName
+  const latestSnapshotAt = snapshot?.collectedAt
+
+  const updateSearchQuery = (value: string) => {
+    setProcessQuery(value)
+    setSearchPage(0)
+  }
+
+  useEffect(() => {
+    if (!searchQuery || !hostName) {
+      setSearchResults([])
+      setSearchTotalElements(0)
+      setSearchTotalPages(0)
+      setSearchStatus('idle')
+      return
+    }
+
+    const abortController = new AbortController()
+    const timer = setTimeout(async () => {
+      setSearchStatus('loading')
+      try {
+        const response = await fetch(
+          `${apiBase}/search?hostName=${encodeURIComponent(hostName)}&query=${encodeURIComponent(searchQuery)}&page=${searchPage}&size=${searchPageSize}`,
+          { signal: abortController.signal },
+        )
+        if (!response.ok) throw new Error(`Could not search process history (${response.status}).`)
+        const result = await response.json() as ProcessOccurrencePage
+        if (searchPage > 0 && searchPage >= result.totalPages) {
+          setSearchPage(Math.max(0, result.totalPages - 1))
+          return
+        }
+        setSearchResults(result.occurrences)
+        setSearchTotalElements(result.totalElements)
+        setSearchTotalPages(result.totalPages)
+        setSearchStatus('idle')
+      } catch (searchError: unknown) {
+        if (abortController.signal.aborted) return
+        setSearchStatus('error')
+        setError((searchError as Error).message)
+      }
+    }, 250)
+
+    return () => { clearTimeout(timer); abortController.abort() }
+  }, [hostName, latestSnapshotAt, searchPage, searchQuery])
+
   const metrics = useMemo(() => snapshot ? metricsFor(snapshot) : { cpuUsagePercent: 0, memoryUsagePercent: 0, diskUsagePercent: 0 }, [snapshot])
-  const processes = useMemo(() => snapshot?.processes.slice().sort((a, b) => b.cpuUsagePercent - a.cpuUsagePercent).slice(0, 15) ?? [], [snapshot])
+  const currentOccurrences = useMemo<ProcessOccurrence[]>(() => snapshot?.processes
+    .slice()
+    .sort((a, b) => b.cpuUsagePercent - a.cpuUsagePercent)
+    .slice(0, 15)
+    .map((process) => ({ ...process, hostName: snapshot.hostName, collectedAt: snapshot.collectedAt })) ?? [], [snapshot])
+  const displayedProcesses = searchQuery ? searchResults : currentOccurrences
 
   return (
     <main className="dashboard-shell">
@@ -176,10 +247,12 @@ function App() {
         <section className="chart-grid" aria-label="Resource history"><UsageChart label="CPU trend" history={history} valueKey="cpuUsagePercent" /><UsageChart label="RAM trend" history={history} valueKey="memoryUsagePercent" /><UsageChart label="Disk trend" history={history} valueKey="diskUsagePercent" /></section>
 
         <section className="process-panel">
-          <div className="process-panel__heading"><div><p className="eyebrow">ACTIVE PROCESSES</p><h2>Highest CPU usage</h2></div><span>{snapshot ? `${snapshot.processes.length} running` : 'Waiting for data'}</span></div>
-          <div className="process-table-wrap"><table><thead><tr><th>Process</th><th>PID</th><th>CPU</th><th>RAM</th><th>Memory</th></tr></thead><tbody>
-            {processes.map((process) => <tr key={`${process.processId}-${process.processName}`}><td>{process.processName}</td><td>{process.processId}</td><td>{formatPercent(process.cpuUsagePercent)}</td><td>{formatBytes(process.memoryBytes)}</td><td>{formatPercent(process.memoryUsagePercent)}</td></tr>)}
-            {processes.length === 0 && <tr><td colSpan={5} className="empty-state">No process data available.</td></tr>}
+          <div className="process-panel__heading"><div><p className="eyebrow">ACTIVE PROCESSES</p><h2>{searchQuery ? 'Process occurrences' : 'Highest CPU usage'}</h2></div><div className="process-panel__actions"><label className="process-search"><span className="sr-only">Search process history</span><input value={processQuery} onChange={(event) => updateSearchQuery(event.target.value)} type="search" placeholder="Search process history" aria-describedby="process-search-help" /></label><span>{snapshot ? `${snapshot.processes.length} running` : 'Waiting for data'}</span></div></div>
+          {searchQuery && <div className="process-pagination" aria-label="Search result pagination"><button type="button" onClick={() => setSearchPage((page) => page - 1)} disabled={searchPage === 0}>Previous</button><span>Page {searchPage + 1} of {Math.max(1, searchTotalPages)}</span><button type="button" onClick={() => setSearchPage((page) => page + 1)} disabled={searchPage + 1 >= searchTotalPages}>Next</button></div>}
+          <p id="process-search-help" className="process-search-help">{searchQuery ? searchStatus === 'loading' ? 'Searching stored occurrences...' : `${searchTotalElements} matching stored occurrences, newest first.` : 'Search by process name or PID across the stored history.'}</p>
+          <div className="process-table-wrap"><table><thead><tr><th>Process</th><th>PID</th><th>CPU</th><th>RAM</th><th>Memory</th><th>Seen at</th></tr></thead><tbody>
+            {displayedProcesses.map((process) => <tr key={`${process.processId}-${process.processName}-${process.collectedAt}`}><td>{process.processName}</td><td>{process.processId}</td><td>{formatPercent(process.cpuUsagePercent)}</td><td>{formatBytes(process.memoryBytes)}</td><td>{formatPercent(process.memoryUsagePercent)}</td><td><time dateTime={process.collectedAt}>{new Date(process.collectedAt).toLocaleTimeString()}</time></td></tr>)}
+            {displayedProcesses.length === 0 && <tr><td colSpan={6} className="empty-state">{searchQuery ? searchStatus === 'loading' ? 'Searching process history...' : 'No matching process occurrences found.' : 'No process data available.'}</td></tr>}
           </tbody></table></div>
         </section>
         <footer><span className="legend healthy">Green: capacity available</span><span className="legend warning">Amber: elevated</span><span className="legend busy">Red: very busy</span></footer>

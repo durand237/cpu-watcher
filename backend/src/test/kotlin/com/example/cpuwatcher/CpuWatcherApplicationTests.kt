@@ -60,5 +60,16 @@ class CpuWatcherApplicationTests {
 		mockMvc.perform(get("/api/v1/metrics/processes/latest"))
 			.andExpect(status().isOk)
 			.andExpect(jsonPath("$.hostName").value("workstation-01"))
+
+		mockMvc.perform(
+			get("/api/v1/metrics/processes/search")
+				.param("hostName", "workstation-01")
+				.param("query", "jav"),
+		)
+			.andExpect(status().isOk)
+			.andExpect(jsonPath("$.occurrences[0].processName").value("java"))
+			.andExpect(jsonPath("$.occurrences[0].collectedAt").value("2026-08-25T12:00:00Z"))
+			.andExpect(jsonPath("$.page").value(0))
+			.andExpect(jsonPath("$.totalPages").value(1))
 	}
 }
