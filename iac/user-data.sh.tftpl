@@ -1,0 +1,68 @@
+#!/bin/bash
+set -euxo pipefail
+
+dnf update -y
+dnf install -y docker git java-17-amazon-corretto-headless
+systemctl enable --now docker
+usermod -aG docker ec2-user
+
+install -d -o ec2-user -g ec2-user /opt/cpu-watcher
+install -d -m 0755 /opt/cpu-watcher/repository
+
+if ! id cpu-watcher >/dev/null 2>&1; then
+  useradd --system --home-dir /opt/cpu-watcher --shell /sbin/nologin cpu-watcher
+fi
+
+git clone --depth 1 --branch "${collector_repository_ref}" "${collector_repository_url}" /opt/cpu-watcher/repository
+cd /opt/cpu-watcher/repository/collector
+./gradlew --no-daemon bootJar
+
+collector_jar=$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -print -quit)
+test -n "$collector_jar"
+install -o root -g cpu-watcher -m 0550 "$collector_jar" /opt/cpu-watcher/collector.jar
+rm -rf /opt/cpu-watcher/repository
+
+cat >/usr/local/bin/cpu-watcher-collector <<'EOF'
+#!/bin/bash
+set -euo pipefail
+
+: "$AWS_REGION"
+: "$COLLECTOR_API_KEY_PARAMETER_NAME"
+
+COLLECTOR_API_KEY=$(aws ssm get-parameter \
+  --region "$AWS_REGION" \
+  --name "$COLLECTOR_API_KEY_PARAMETER_NAME" \
+  --with-decryption \
+  --query 'Parameter.Value' \
+  --output text)
+
+test -n "$COLLECTOR_API_KEY"
+export COLLECTOR_API_KEY
+exec /usr/bin/java -jar /opt/cpu-watcher/collector.jar
+EOF
+chmod 0755 /usr/local/bin/cpu-watcher-collector
+
+cat >/etc/systemd/system/cpu-watcher-collector.service <<EOF
+[Unit]
+Description=CPU Watcher host metrics collector
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=cpu-watcher
+Group=cpu-watcher
+Environment=AWS_REGION=${aws_region}
+Environment=COLLECTOR_API_KEY_PARAMETER_NAME=${collector_api_key_parameter_name}
+Environment=COLLECTOR_BACKEND_URL=http://127.0.0.1:8080
+ExecStart=/usr/local/bin/cpu-watcher-collector
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now cpu-watcher-collector

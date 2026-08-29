@@ -102,5 +102,7 @@ tmp/
 # Docker-created local data and the conventional local Compose override.
 docker-data/
 **/docker-data/
+.localstack/
+**/.localstack/
 docker-compose.override.yml
 compose.override.yml
