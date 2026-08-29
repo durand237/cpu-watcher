@@ -32,6 +32,13 @@ resource "aws_ecr_lifecycle_policy" "application" {
   })
 }
 
+resource "aws_ssm_parameter" "collector_api_key" {
+  name        = "/${local.name_prefix}/collector/api-key"
+  description = "API key used by the host-native CPU Watcher collector"
+  type        = "SecureString"
+  value       = var.collector_api_key
+}
+
 resource "aws_instance" "application" {
   ami                         = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type               = var.instance_type
@@ -39,7 +46,12 @@ resource "aws_instance" "application" {
   vpc_security_group_ids      = [aws_security_group.application.id]
   iam_instance_profile        = aws_iam_instance_profile.application.name
   associate_public_ip_address = true
-  user_data                   = file("${path.module}/user-data.sh")
+  user_data = templatefile("${path.module}/user-data.sh.tftpl", {
+    aws_region                       = var.aws_region
+    collector_api_key_parameter_name = aws_ssm_parameter.collector_api_key.name
+    collector_repository_ref         = var.collector_repository_ref
+    collector_repository_url         = var.collector_repository_url
+  })
   user_data_replace_on_change = true
 
   metadata_options {

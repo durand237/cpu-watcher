@@ -51,3 +51,36 @@ variable "ssh_allowed_cidr" {
   default     = null
   nullable    = true
 }
+
+variable "collector_api_key" {
+  description = "Non-empty API key for the host collector. Terraform stores this sensitive value in state; protect the state file."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(trimspace(var.collector_api_key)) > 0
+    error_message = "collector_api_key must be non-empty."
+  }
+}
+
+variable "collector_repository_url" {
+  description = "Public HTTPS Git repository containing the collector source used during first boot."
+  type        = string
+  default     = "https://github.com/durand237/cpu-watcher.git"
+
+  validation {
+    condition     = can(regex("^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\\.git)?$", var.collector_repository_url))
+    error_message = "collector_repository_url must be a public HTTPS GitHub repository URL."
+  }
+}
+
+variable "collector_repository_ref" {
+  description = "Git branch or tag to build for the host collector."
+  type        = string
+  default     = "main"
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9._/-]+$", var.collector_repository_ref))
+    error_message = "collector_repository_ref may contain only letters, numbers, dots, underscores, slashes, and hyphens."
+  }
+}

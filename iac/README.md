@@ -5,6 +5,7 @@ This directory is a deliberately small first deployment target for CPU Watcher:
 ```text
 Internet -> CloudFront -> private S3 bucket (React build)
 Internet -> EC2 public IP :80/:443 -> future Nginx/Docker Compose stack
+EC2 host -> host-native collector -> loopback backend :8080
 EC2 instance role -> ECR (pull backend image)
 ```
 
@@ -12,9 +13,33 @@ Terraform creates a VPC, one public subnet, an Internet gateway and route table,
 an EC2 security group, an IAM instance role, an ECR repository, an Amazon Linux
 2023 EC2 instance, a private S3 frontend bucket, and a CloudFront distribution.
 
+It also deploys the collector directly on the EC2 host as a `systemd` service. On
+first boot, the instance clones the configured public repository at the configured
+ref, builds `collector/`, and starts `cpu-watcher-collector`. The API key is kept
+in a SecureString SSM parameter and the instance role may read only that parameter.
+The collector posts to `http://127.0.0.1:8080`, so it starts sending data once the
+future backend deployment is running locally on the host.
+
 It deliberately does **not** create RDS, ECS, Fargate, a NAT gateway, a domain,
 a TLS certificate, a database, or any application containers. Docker is installed
-on the EC2 host, but production Compose files and secrets are a later checkpoint.
+on the EC2 host, but production Compose files are a later checkpoint.
+
+## Collector configuration
+
+Set a non-empty `collector_api_key` in `terraform.tfvars` (see
+`terraform.tfvars.example`). The value is marked sensitive in Terraform output,
+but it is still stored in Terraform state because Terraform creates the SSM
+parameter; keep the state file protected. The default source repository is this
+project's public GitHub repository and the default ref is `main`. Change
+`collector_repository_url` and `collector_repository_ref` if a release repository
+or immutable tag should be deployed.
+
+After applying, use Session Manager to check the service:
+
+```bash
+sudo systemctl status cpu-watcher-collector
+sudo journalctl -u cpu-watcher-collector -f
+```
 
 ## EBS and the database
 
