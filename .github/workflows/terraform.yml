@@ -1,0 +1,82 @@
+name: Terraform
+
+on:
+  pull_request:
+    paths:
+      - "iac/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches: [main]
+    tags: ["iac-v*"]
+    paths:
+      - "iac/**"
+      - ".github/workflows/terraform.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-production
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Format and validate Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.16.0"
+          terraform_wrapper: false
+      - name: Check formatting
+        working-directory: iac
+        run: terraform fmt -check -recursive
+      - name: Initialize providers without state
+        working-directory: iac
+        run: terraform init -backend=false -input=false
+      - name: Validate configuration
+        working-directory: iac
+        run: terraform validate -no-color
+
+  apply:
+    name: Apply tagged infrastructure release
+    needs: validate
+    if: >-
+      startsWith(github.ref, 'refs/tags/iac-v') &&
+      vars.TERRAFORM_DEPLOY_ENABLED == 'true' &&
+      vars.AWS_DEPLOY_ROLE_ARN != '' &&
+      vars.AWS_DEFAULT_REGION != '' &&
+      vars.AWS_ACCOUNT_ID != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_VAR_collector_api_key: ${{ secrets.TF_VAR_COLLECTOR_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.16.0"
+          terraform_wrapper: false
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+          role-session-name: github-terraform-apply
+      - name: Initialize remote state
+        working-directory: iac
+        run: terraform init -input=false
+      - name: Create reviewed plan
+        working-directory: iac
+        run: terraform plan -out=tfplan -input=false -no-color
+      - name: Apply saved plan
+        working-directory: iac
+        run: terraform apply -input=false -auto-approve tfplan
