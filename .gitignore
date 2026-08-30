@@ -74,6 +74,8 @@ bin/
 *.war
 *.ear
 *.nar
+# Gradle wrapper is source-controlled so clean hosts can build the projects.
+!**/gradle/wrapper/gradle-wrapper.jar
 hs_err_pid*
 replay_pid*
 
