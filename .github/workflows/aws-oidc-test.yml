@@ -10,6 +10,8 @@ permissions:
 jobs:
   oidc-test:
     runs-on: ubuntu-latest
+    environment:
+      name: production
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
