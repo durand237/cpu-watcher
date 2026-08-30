@@ -15,8 +15,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           # Assumes AWS_DEPLOY_ROLE_ARN is the full ARN (e.g. arn:aws:iam::123456789012:role/... )
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION }} 
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_DEFAULT_REGION }} 
 
       - name: Verify Authentication (Who Am I?)
         run: |
