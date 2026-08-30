@@ -94,6 +94,10 @@ jobs:
         run: |
           version="${RELEASE_TAG#backend-v}"
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "Invalid backend release tag: $RELEASE_TAG"; exit 1; }
+          if aws ecr describe-images --repository-name "$REPOSITORY" --image-ids imageTag="$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Immutable image $REGISTRY/$REPOSITORY:$RELEASE_TAG already exists; reusing it."
+            exit 0
+          fi
           docker build --build-arg APP_VERSION="$version" --tag "$REGISTRY/$REPOSITORY:$RELEASE_TAG" backend
           docker push "$REGISTRY/$REPOSITORY:$RELEASE_TAG"
       - name: Deploy release to EC2 through Systems Manager
