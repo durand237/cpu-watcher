@@ -6,8 +6,26 @@ for required_var in AWS_REGION ECR_REGISTRY ECR_REPOSITORY RELEASE_TAG PARAMETER
 done
 
 if ! docker compose version >/dev/null 2>&1; then
-  dnf install -y docker-compose-plugin
+  compose_version="v2.29.7"
+  compose_architecture="$(uname -m)"
+
+  case "$compose_architecture" in
+    x86_64 | aarch64) ;;
+    *) echo "Unsupported Docker Compose architecture: $compose_architecture" >&2; exit 1 ;;
+  esac
+
+  if ! command -v curl >/dev/null 2>&1; then
+    dnf install -y curl
+  fi
+
+  install -d -m 0755 /usr/local/lib/docker/cli-plugins
+  curl --fail --location --retry 3 \
+    "https://github.com/docker/compose/releases/download/$compose_version/docker-compose-linux-$compose_architecture" \
+    --output /usr/local/lib/docker/cli-plugins/docker-compose
+  chmod 0755 /usr/local/lib/docker/cli-plugins/docker-compose
 fi
+
+docker compose version
 
 systemctl enable --now docker
 
