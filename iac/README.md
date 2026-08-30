@@ -63,9 +63,11 @@ Do not run `terraform destroy` against an instance that holds data you need.
    `terraform plan` from this directory.
 3. Review the plan and AWS cost estimate before `terraform apply`.
 
-The current state backend is local by design. The next infrastructure checkpoint
-should create a dedicated, versioned state bucket and switch this configuration to
-the locked S3 backend before GitHub Actions is permitted to apply changes.
+Terraform state is stored in the versioned, encrypted S3 backend declared in
+`backend.tf`, with native S3 locking enabled. Create the bucket once from
+[`state-bootstrap/`](state-bootstrap/) before running the GitHub Actions apply
+workflow. State contains the sensitive collector API key, so do not grant access
+to its bucket outside the dedicated Terraform deployment role.
 
 ## LocalStack
 

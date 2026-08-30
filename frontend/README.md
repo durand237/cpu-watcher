@@ -1,6 +1,23 @@
-# React + TypeScript + Vite
+# CPU Watcher frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Run the Vite development server locally with:
+
+```bash
+npm ci
+npm run dev
+```
+
+Local development proxies `/api` requests to `http://localhost:8080`. Start the
+backend locally on that port, or override the target for another backend:
+
+```bash
+VITE_API_PROXY_TARGET=http://localhost:8081 npm run dev
+```
+
+Docker Compose sets `VITE_API_PROXY_TARGET=http://nginx` automatically, so the
+frontend container continues to use the internal Nginx API proxy.
+
+## React + TypeScript + Vite
 
 Currently, two official plugins are available:
 

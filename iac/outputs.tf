@@ -18,6 +18,11 @@ output "cloudfront_domain_name" {
   value       = aws_cloudfront_distribution.frontend.domain_name
 }
 
+output "cloudfront_distribution_id" {
+  description = "Distribution ID used by the frontend release workflow to invalidate cached files."
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
 output "session_manager_command" {
   description = "AWS CLI command for shell access without opening SSH."
   value       = "aws ssm start-session --target ${aws_instance.application.id} --region ${var.aws_region}"

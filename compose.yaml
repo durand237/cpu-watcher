@@ -5,6 +5,8 @@ services:
     image: node:24.19.0-alpine3.24
     working_dir: /workspace
     restart: unless-stopped
+    environment:
+      VITE_API_PROXY_TARGET: http://nginx
     depends_on:
       nginx:
         condition: service_started

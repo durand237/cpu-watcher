@@ -55,9 +55,9 @@ The collector key must be stored as the protected GitHub Actions secret
 variable. Add this secret only after OIDC and remote state are ready.
 
 The Terraform `apply` job is intentionally skipped until
-`TERRAFORM_DEPLOY_ENABLED=true`. Do not enable it while Terraform uses the current
-local state backend: a GitHub-hosted runner is ephemeral and cannot safely retain
-that state. First configure a protected, remote state backend with locking.
+`TERRAFORM_DEPLOY_ENABLED=true`. First create the protected remote state bucket
+from [`iac/state-bootstrap/`](../../iac/state-bootstrap/) so the GitHub-hosted
+runner uses durable, locked state.
 
 The workflows use GitHub OIDC (`id-token: write`) and do not accept permanent AWS
 access keys. The AWS role trust policy must restrict access to this repository and
