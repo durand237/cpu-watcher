@@ -186,13 +186,7 @@ function App() {
   }
 
   useEffect(() => {
-    if (!searchQuery || !hostName) {
-      setSearchResults([])
-      setSearchTotalElements(0)
-      setSearchTotalPages(0)
-      setSearchStatus('idle')
-      return
-    }
+    if (!searchQuery || !hostName) return
 
     const abortController = new AbortController()
     const timer = setTimeout(async () => {
@@ -228,7 +222,8 @@ function App() {
     .sort((a, b) => b.cpuUsagePercent - a.cpuUsagePercent)
     .slice(0, 15)
     .map((process) => ({ ...process, hostName: snapshot.hostName, collectedAt: snapshot.collectedAt })) ?? [], [snapshot])
-  const displayedProcesses = searchQuery ? searchResults : currentOccurrences
+  const isSearchActive = Boolean(searchQuery && hostName)
+  const displayedProcesses = isSearchActive ? searchResults : currentOccurrences
 
   return (
     <main className="dashboard-shell">
@@ -248,12 +243,12 @@ function App() {
         <section className="chart-grid" aria-label="Resource history"><UsageChart label="CPU trend" history={history} valueKey="cpuUsagePercent" /><UsageChart label="RAM trend" history={history} valueKey="memoryUsagePercent" /><UsageChart label="Disk trend" history={history} valueKey="diskUsagePercent" /></section>
 
         <section className="process-panel">
-          <div className="process-panel__heading"><div><p className="eyebrow">ACTIVE PROCESSES</p><h2>{searchQuery ? 'Process occurrences' : 'Highest CPU usage'}</h2></div><div className="process-panel__actions"><label className="process-search"><span className="sr-only">Search process history</span><input value={processQuery} onChange={(event) => updateSearchQuery(event.target.value)} type="search" placeholder="Search process history" aria-describedby="process-search-help" /></label><span>{snapshot ? `${snapshot.processes.length} running` : 'Waiting for data'}</span></div></div>
-          {searchQuery && <div className="process-pagination" aria-label="Search result pagination"><button type="button" onClick={() => setSearchPage((page) => page - 1)} disabled={searchPage === 0}>Previous</button><span>Page {searchPage + 1} of {Math.max(1, searchTotalPages)}</span><button type="button" onClick={() => setSearchPage((page) => page + 1)} disabled={searchPage + 1 >= searchTotalPages}>Next</button></div>}
-          <p id="process-search-help" className="process-search-help">{searchQuery ? searchStatus === 'loading' ? 'Searching stored occurrences...' : `${searchTotalElements} matching stored occurrences, newest first.` : 'Search by process name or PID across the stored history.'}</p>
+          <div className="process-panel__heading"><div><p className="eyebrow">ACTIVE PROCESSES</p><h2>{isSearchActive ? 'Process occurrences' : 'Highest CPU usage'}</h2></div><div className="process-panel__actions"><label className="process-search"><span className="sr-only">Search process history</span><input value={processQuery} onChange={(event) => updateSearchQuery(event.target.value)} type="search" placeholder="Search process history" aria-describedby="process-search-help" /></label><span>{snapshot ? `${snapshot.processes.length} running` : 'Waiting for data'}</span></div></div>
+          {isSearchActive && <div className="process-pagination" aria-label="Search result pagination"><button type="button" onClick={() => setSearchPage((page) => page - 1)} disabled={searchPage === 0}>Previous</button><span>Page {searchPage + 1} of {Math.max(1, searchTotalPages)}</span><button type="button" onClick={() => setSearchPage((page) => page + 1)} disabled={searchPage + 1 >= searchTotalPages}>Next</button></div>}
+          <p id="process-search-help" className="process-search-help">{isSearchActive ? searchStatus === 'loading' ? 'Searching stored occurrences...' : `${searchTotalElements} matching stored occurrences, newest first.` : 'Search by process name or PID across the stored history.'}</p>
           <div className="process-table-wrap"><table><thead><tr><th>Process</th><th>PID</th><th>CPU</th><th>RAM</th><th>Memory</th><th>Seen at</th></tr></thead><tbody>
             {displayedProcesses.map((process) => <tr key={`${process.processId}-${process.processName}-${process.collectedAt}`}><td>{process.processName}</td><td>{process.processId}</td><td>{formatPercent(process.cpuUsagePercent)}</td><td>{formatBytes(process.memoryBytes)}</td><td>{formatPercent(process.memoryUsagePercent)}</td><td><time dateTime={process.collectedAt}>{new Date(process.collectedAt).toLocaleTimeString()}</time></td></tr>)}
-            {displayedProcesses.length === 0 && <tr><td colSpan={6} className="empty-state">{searchQuery ? searchStatus === 'loading' ? 'Searching process history...' : 'No matching process occurrences found.' : 'No process data available.'}</td></tr>}
+            {displayedProcesses.length === 0 && <tr><td colSpan={6} className="empty-state">{isSearchActive ? searchStatus === 'loading' ? 'Searching process history...' : 'No matching process occurrences found.' : 'No process data available.'}</td></tr>}
           </tbody></table></div>
         </section>
         <footer><span className="legend healthy">Green: capacity available</span><span className="legend warning">Amber: elevated</span><span className="legend busy">Red: very busy</span><span className="app-version">Version {appVersion}</span></footer>
