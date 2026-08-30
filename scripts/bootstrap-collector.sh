@@ -26,7 +26,9 @@ fi
 
 cd "$collector_dir"
 chmod +x gradlew
-./gradlew --no-daemon bootJar
+# Keep the one-time host build within the memory budget of the t3.micro that
+# also runs PostgreSQL and the API. A single worker is sufficient here.
+./gradlew --no-daemon --max-workers=1 -Dorg.gradle.jvmargs="-Xmx256m -XX:MaxMetaspaceSize=192m" bootJar
 
 collector_jar="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -print -quit)"
 test -n "$collector_jar"
