@@ -64,6 +64,13 @@ jobs:
         with:
           terraform_version: "1.16.0"
           terraform_wrapper: false
+      - name: Derive infrastructure release version
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#iac-v}"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "Invalid infrastructure release tag: $GITHUB_REF_NAME"; exit 1; }
+          echo "value=$version" >> "$GITHUB_OUTPUT"
       - name: Configure AWS credentials through OIDC
         uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
@@ -76,7 +83,11 @@ jobs:
         run: terraform init -input=false
       - name: Create reviewed plan
         working-directory: iac
+        env:
+          TF_VAR_release_version: ${{ steps.version.outputs.value }}
         run: terraform plan -out=tfplan -input=false -no-color
       - name: Apply saved plan
         working-directory: iac
+        env:
+          TF_VAR_release_version: ${{ steps.version.outputs.value }}
         run: terraform apply -input=false -auto-approve tfplan

@@ -40,6 +40,7 @@ type HistoryPoint = HostMetrics & { collectedAt: string }
 const apiBase = '/api/v1/metrics/processes'
 const maxHistoryPoints = 60
 const searchPageSize = 15
+const appVersion = import.meta.env.VITE_APP_VERSION ?? 'development'
 
 function clamp(value: number) {
   return Math.min(100, Math.max(0, value))
@@ -255,7 +256,7 @@ function App() {
             {displayedProcesses.length === 0 && <tr><td colSpan={6} className="empty-state">{searchQuery ? searchStatus === 'loading' ? 'Searching process history...' : 'No matching process occurrences found.' : 'No process data available.'}</td></tr>}
           </tbody></table></div>
         </section>
-        <footer><span className="legend healthy">Green: capacity available</span><span className="legend warning">Amber: elevated</span><span className="legend busy">Red: very busy</span></footer>
+        <footer><span className="legend healthy">Green: capacity available</span><span className="legend warning">Amber: elevated</span><span className="legend busy">Red: very busy</span><span className="app-version">Version {appVersion}</span></footer>
       </div>
     </main>
   )

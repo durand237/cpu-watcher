@@ -16,6 +16,12 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "release_version" {
+  description = "Infrastructure release version applied as an AWS resource tag."
+  type        = string
+  default     = "unreleased"
+}
+
 variable "vpc_cidr" {
   description = "CIDR range for the project VPC."
   type        = string

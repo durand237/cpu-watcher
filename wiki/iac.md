@@ -56,6 +56,10 @@ At the EC2 instance's first boot, `user-data.sh.tftpl`:
 The EC2 role can read only this collector API-key parameter. It does not use a
 developer's AWS credentials.
 
+Terraform also applies a `Release` tag to every managed AWS resource. Local
+commands use `unreleased` by default; an `iac-vMAJOR.MINOR.PATCH` workflow run
+uses the version derived from that immutable Git tag.
+
 After applying Terraform, connect through Session Manager and inspect the service:
 
 ```bash

@@ -20,6 +20,10 @@ in a SecureString SSM parameter and the instance role may read only that paramet
 The collector posts to `http://127.0.0.1:8080`, so it starts sending data once the
 future backend deployment is running locally on the host.
 
+Terraform adds the `Release` tag to managed AWS resources. It defaults to
+`unreleased` locally; the `iac-vMAJOR.MINOR.PATCH` GitHub Actions release workflow
+sets it to the tagged infrastructure version.
+
 It deliberately does **not** create RDS, ECS, Fargate, a NAT gateway, a domain,
 a TLS certificate, a database, or any application containers. Docker is installed
 on the EC2 host, but production Compose files are a later checkpoint.

@@ -31,6 +31,16 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - name: Derive build version
+        id: version
+        shell: bash
+        run: |
+          version="development"
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#frontend-v}"
+            [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "Invalid frontend release tag: $GITHUB_REF_NAME"; exit 1; }
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
@@ -39,6 +49,8 @@ jobs:
         run: npm run lint
       - name: Build
         working-directory: frontend
+        env:
+          VITE_APP_VERSION: ${{ steps.version.outputs.value }}
         run: npm run build
       - name: Upload frontend build
         uses: actions/upload-artifact@v7

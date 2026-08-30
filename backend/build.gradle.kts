@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.example"
-version = "0.0.1-SNAPSHOT"
+version = providers.gradleProperty("releaseVersion").orElse("0.0.1-SNAPSHOT").get()
 
 java {
 	toolchain {
@@ -41,6 +41,16 @@ dependencies {
 kotlin {
 	compilerOptions {
 		freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
+	}
+}
+
+springBoot {
+	buildInfo()
+}
+
+tasks.bootJar {
+	manifest {
+		attributes["Implementation-Version"] = project.version
 	}
 }
 

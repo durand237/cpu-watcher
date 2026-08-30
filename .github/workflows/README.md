@@ -27,6 +27,13 @@ git push origin iac-v1.0.0
 Protect these tag patterns and the `production` GitHub environment before using
 them for releases. The `production` environment should require an approval.
 
+Each release tag must use semantic versioning: `component-vMAJOR.MINOR.PATCH`,
+with an optional prerelease suffix such as `backend-v1.2.0-rc.1`. The workflows
+reject other tag formats. They pass the version into the backend and collector
+JAR builds, inject it into the frontend bundle, and tag AWS resources with the
+infrastructure release version. A Git tag marks an already committed revision;
+it never replaces `git commit`.
+
 ## OIDC safety gate
 
 No AWS mutation occurs until AWS OIDC is configured and these repository or
