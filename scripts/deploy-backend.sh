@@ -55,3 +55,12 @@ export POSTGRES_PASSWORD="$postgres_password"
 docker compose -f compose.production.yaml pull
 docker compose -f compose.production.yaml up -d --remove-orphans
 docker image prune -f
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+if ! systemctl cat cpu-watcher-collector.service >/dev/null 2>&1; then
+  AWS_REGION="$AWS_REGION" PARAMETER_PREFIX="$PARAMETER_PREFIX" \
+    bash "$script_dir/bootstrap-collector.sh"
+else
+  systemctl restart cpu-watcher-collector
+fi
