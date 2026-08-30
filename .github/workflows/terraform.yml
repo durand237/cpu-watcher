@@ -57,6 +57,7 @@ jobs:
       id-token: write
     env:
       TF_VAR_collector_api_key: ${{ secrets.TF_VAR_COLLECTOR_API_KEY }}
+      TF_VAR_postgres_password: ${{ secrets.TF_VAR_POSTGRES_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v6

@@ -27,9 +27,12 @@ resource "aws_iam_role_policy_attachment" "ssm" {
 
 data "aws_iam_policy_document" "collector_api_key_read" {
   statement {
-    effect    = "Allow"
-    actions   = ["ssm:GetParameter"]
-    resources = [aws_ssm_parameter.collector_api_key.arn]
+    effect  = "Allow"
+    actions = ["ssm:GetParameter"]
+    resources = [
+      aws_ssm_parameter.collector_api_key.arn,
+      aws_ssm_parameter.postgres_password.arn,
+    ]
   }
 }
 

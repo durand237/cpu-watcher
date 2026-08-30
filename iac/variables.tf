@@ -69,6 +69,17 @@ variable "collector_api_key" {
   }
 }
 
+variable "postgres_password" {
+  description = "Password for the PostgreSQL service on the application host."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(trimspace(var.postgres_password)) >= 24
+    error_message = "postgres_password must contain at least 24 characters."
+  }
+}
+
 variable "collector_repository_url" {
   description = "Public HTTPS Git repository containing the collector source used during first boot."
   type        = string

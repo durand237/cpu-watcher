@@ -53,17 +53,21 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
+data "aws_ec2_managed_prefix_list" "cloudfront_origin_facing" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
 resource "aws_security_group" "application" {
   name        = "${local.name_prefix}-application"
   description = "Public web traffic to the single Docker host"
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description = "HTTP for the current reverse proxy and collector API"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP requests from CloudFront to the API origin"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront_origin_facing.id]
   }
 
   ingress {

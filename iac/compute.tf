@@ -39,6 +39,13 @@ resource "aws_ssm_parameter" "collector_api_key" {
   value       = var.collector_api_key
 }
 
+resource "aws_ssm_parameter" "postgres_password" {
+  name        = "/${local.name_prefix}/postgres/password"
+  description = "Password for the PostgreSQL service on the application host"
+  type        = "SecureString"
+  value       = var.postgres_password
+}
+
 resource "aws_instance" "application" {
   ami                         = data.aws_ssm_parameter.amazon_linux_2023_ami.value
   instance_type               = var.instance_type

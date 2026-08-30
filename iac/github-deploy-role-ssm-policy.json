@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DeployApplicationWithRunCommand",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetDocument",
+        "ssm:SendCommand"
+      ],
+      "Resource": [
+        "arn:aws:ssm:eu-central-1::document/AWS-RunShellScript",
+        "arn:aws:ec2:eu-central-1:333159324079:instance/<APPLICATION_INSTANCE_ID>"
+      ]
+    },
+    {
+      "Sid": "ReadDeploymentCommandStatus",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetCommandInvocation",
+        "ssm:ListCommandInvocations"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

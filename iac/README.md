@@ -69,6 +69,15 @@ Terraform state is stored in the versioned, encrypted S3 backend declared in
 workflow. State contains the sensitive collector API key, so do not grant access
 to its bucket outside the dedicated Terraform deployment role.
 
+## Application deployment
+
+Terraform creates secure Parameter Store values for the collector API key and
+PostgreSQL password. The backend release workflow uses Systems Manager to make
+the EC2 host fetch both values, pull the versioned ECR image, and run the
+production Compose stack. CloudFront routes `/api/*` to the EC2 Nginx origin;
+the EC2 security group permits HTTP only from CloudFront's managed origin-facing
+prefix list.
+
 ## LocalStack
 
 This is production-shaped AWS configuration, not a LocalStack-only configuration.

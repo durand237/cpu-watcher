@@ -47,12 +47,15 @@ environment variables are set:
 | `ECR_REPOSITORY` | Backend release, e.g. `cpu-watcher-dev-backend` |
 | `FRONTEND_BUCKET_NAME` | Frontend release |
 | `CLOUDFRONT_DISTRIBUTION_ID` | Frontend release |
+| `APPLICATION_INSTANCE_ID` | Backend release; EC2 target for the SSM deployment command |
 | `TERRAFORM_DEPLOY_ENABLED` | Terraform release only; set to exactly `true` after remote state is configured |
 
 The collector key must be stored as the protected GitHub Actions secret
 `TF_VAR_COLLECTOR_API_KEY`; the Terraform workflow maps it to
-`TF_VAR_collector_api_key`. Never commit it or add it as a plain repository
-variable. Add this secret only after OIDC and remote state are ready.
+`TF_VAR_collector_api_key`. The PostgreSQL password must similarly be stored as
+`TF_VAR_POSTGRES_PASSWORD`; the workflow maps it to `TF_VAR_postgres_password`.
+Never commit either value or add it as a plain repository variable. Add these
+secrets only after OIDC and remote state are ready.
 
 The Terraform `apply` job is intentionally skipped until
 `TERRAFORM_DEPLOY_ENABLED=true`. First create the protected remote state bucket
@@ -62,3 +65,11 @@ runner uses durable, locked state.
 The workflows use GitHub OIDC (`id-token: write`) and do not accept permanent AWS
 access keys. The AWS role trust policy must restrict access to this repository and
 the protected `production` environment or approved release ref.
+
+## Backend release deployment
+
+The backend release workflow pushes an immutable image to ECR, then uses Systems
+Manager Run Command to deploy it to the EC2 host. Set `APPLICATION_INSTANCE_ID`
+from the `application_instance_id` Terraform output before publishing a backend
+tag. The EC2 instance retrieves the collector API key and PostgreSQL password
+from Parameter Store; neither secret is sent in the Run Command payload.
